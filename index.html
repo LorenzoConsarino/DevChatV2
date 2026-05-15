@@ -104,7 +104,6 @@
     </p>
   </div>
 
-  <!-- BOTTONE CUSTOM -->
   <div id="customChatLauncher" onclick="apriChatSalesforce()">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
           <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H5.2L4 17.2V4h16v12z"/>
@@ -164,31 +163,42 @@
                 // 2. Mostriamo il nostro bottone Custom
                 document.getElementById('customChatLauncher').style.display = 'flex';
                 
-                // Per ulteriore sicurezza, richiamiamo l'API nativa per nascondere il bottone SF
+                // Nascondiamo il bottone nativo alla sua creazione
                 embeddedservice_bootstrap.utilAPI.hideChatButton();
             });
-            window.addEventListener("onEmbeddedMessagingWindowMinimized", () => {
-                setTimeout(() => {
-                    console.log(">>> EVENTO: Window Minimized - Hiding Chat Button");
-                    document.getElementById('customChatLauncher').style.display = 'flex';
-                    embeddedservice_bootstrap.utilAPI.hideChatButton();
-                }, 100);
-            });
 
+            window.addEventListener("onEmbeddedMessagingWindowMinimized", () => {
+                console.log(">>> EVENTO: Window Minimized - Hiding Chat Button");
+                document.getElementById('customChatLauncher').style.display = 'flex';
+                
+                // Nascondiamo subito per evitare flickering
+                embeddedservice_bootstrap.utilAPI.hideChatButton();
+                
+                // Riapplichiamo il comando dopo che l'animazione nativa di Salesforce ha finito
+                // di ricostruire e forzare la visibilità del bottone (sovrascrivendoci)
+                setTimeout(() => {
+                    embeddedservice_bootstrap.utilAPI.hideChatButton();
+                }, 500);
+            });
 
             window.addEventListener("onEmbeddedMessagingWindowClosed", () => {
+                console.log(">>> EVENTO: Window Closed - Hiding Chat Button");
                 // 4. Stessa cosa quando viene chiusa
                 document.getElementById('customChatLauncher').style.display = 'flex';
+                
                 embeddedservice_bootstrap.utilAPI.hideChatButton();
+                setTimeout(() => {
+                    embeddedservice_bootstrap.utilAPI.hideChatButton();
+                }, 500);
             });
 
             // Inizializzazione Core
             embeddedservice_bootstrap.init(
-                '00DUA000003hFV7',
-                'GitZedv2Upload',
-                'https://chogangroup--devai2.sandbox.my.site.com/ESWGitZedv2Upload1775142397588',
+                'OrgId',
+                'SitoGit',
+                'UrlSito',
                 {
-                    scrt2URL: 'https://chogangroup--devai2.sandbox.my.salesforce-scrt.com'
+                    scrt2URL: 'Url2'
                 }
             );
 
@@ -204,13 +214,13 @@
         // Nascondiamo il nostro bottone custom mentre la chat è aperta
         document.getElementById('customChatLauncher').style.display = 'none';
 
-        // 5. Usa l'API NATIVA per lanciare la finestra al posto di simulare il .click()
+        // 5. Usa l'API NATIVA per lanciare la finestra
         console.log('[CustomChat] Lancio della chat via API nativa');
         embeddedservice_bootstrap.utilAPI.launchChat();
     }
 
   </script>
-  <script type='text/javascript' src='https://chogangroup--devai2.sandbox.my.site.com/ESWGitZedv2Upload1775142397588/assets/js/bootstrap.min.js'></script>
+  <script type='text/javascript' src='URL'></script>
 
 </body>
-</html> 
+</html>
