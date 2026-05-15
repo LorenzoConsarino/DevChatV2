@@ -30,7 +30,7 @@
 
     .status { font-size: 13px; text-align: center; color: #0969da; margin-top: 15px; font-weight: 600; min-height: 20px;}
 
-    /* Launcher Custom */
+    /* Launcher Custom Aggiornato */
     #customChatLauncher {
         position: fixed;
         bottom: 20px;
@@ -38,19 +38,18 @@
         width: 65px; 
         height: 65px;
         cursor: pointer;
-        z-index: 9999;
+        z-index: 99999;
         box-shadow: 0 6px 16px rgba(0,0,0,0.3);
         border-radius: 50%;
-        transition: transform 0.2s, background-color 0.2s;
+        transition: transform 0.2s;
         display: none;
-        background-color: #0070d2;
+        background-color: transparent; /* Niente più azzurro fisso! */
         align-items: center;
         justify-content: center;
     }
 
     #customChatLauncher:hover {
-        transform: scale(1.1);
-        background-color: #005fb2;
+        transform: scale(1.05);
     }
 
     #customChatLauncher svg {
