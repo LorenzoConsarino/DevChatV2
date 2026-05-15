@@ -42,7 +42,7 @@
         box-shadow: 0 6px 16px rgba(0,0,0,0.3);
         border-radius: 50%;
         transition: transform 0.2s, background-color 0.2s;
-        display: none; /* Nascosto finché la chat non è pronta */
+        display: none;
         background-color: #0070d2;
         align-items: center;
         justify-content: center;
@@ -57,6 +57,18 @@
         width: 32px;
         height: 32px;
         fill: white; 
+    }
+
+    /* ============================================================
+       FIX: Nasconde il bottone default di Salesforce Embedded
+       Messaging tramite CSS con !important.
+       Salesforce re-mostra il proprio bottone dopo il minimize
+       bypassando hideChatButton() API (comportamento documentato).
+       Il CSS !important sovrascrive qualsiasi inline style
+       impostato via JS da Salesforce (senza !important).
+    ============================================================ */
+    embeddedservice-chat-button {
+        display: none !important;
     }
   </style>
 </head>
@@ -104,6 +116,7 @@
     </p>
   </div>
 
+  <!-- BOTTONE CUSTOM -->
   <div id="customChatLauncher" onclick="apriChatSalesforce()">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
           <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H5.2L4 17.2V4h16v12z"/>
@@ -128,13 +141,25 @@
         initEmbeddedMessaging(selectedLang);
     }
 
+    // Utility: forza il bottone SF nascosto agendo direttamente
+    // sull'inline style con priorità !important, come backup al CSS.
+    function forzaNascondiBottoneSF() {
+        try {
+            embeddedservice_bootstrap.utilAPI.hideChatButton();
+        } catch(e) {}
+        // Override diretto sull'elemento DOM: previene che SF ripristini
+        // il display via JS dopo il minimize (comportamento bypassato dall'API)
+        const sfBtn = document.querySelector('embeddedservice-chat-button');
+        if (sfBtn) {
+            sfBtn.style.setProperty('display', 'none', 'important');
+        }
+    }
+
     function initEmbeddedMessaging(langCode) {
         console.log("--> INIT SALESFORCE START <--");
 
         try {
             embeddedservice_bootstrap.settings.language = langCode;
-            
-            // Diciamo a Salesforce di non caricare il proprio bottone all'avvio
             embeddedservice_bootstrap.settings.hideChatButtonOnLoad = true;
 
             window.addEventListener("onEmbeddedMessagingReady", () => {
@@ -159,41 +184,28 @@
                 document.getElementById('status-msg').innerText = "Chat Pronta (" + langCode + ")";
                 document.getElementById('status-msg').style.color = "green";
                 document.getElementById('start-btn').style.display = 'none';
-                
-                // Mostriamo il nostro bottone Custom
                 document.getElementById('customChatLauncher').style.display = 'flex';
-                
-                // Nascondiamo il bottone nativo alla sua creazione
-                embeddedservice_bootstrap.utilAPI.hideChatButton();
+
+                forzaNascondiBottoneSF();
             });
 
             window.addEventListener("onEmbeddedMessagingWindowMinimized", () => {
-                console.log(">>> EVENTO: Window Minimized - Hiding Chat Button");
-                document.getElementById('customChatLauncher').style.display = 'flex';
-                
-                // 1. Nascondiamo subito per evitare flickering
-                embeddedservice_bootstrap.utilAPI.hideChatButton();
-                
-                // 2. Colpo finale a 600ms per superare l'animazione di SF
+                // SF documenta esplicitamente che il proprio bottone VIENE SEMPRE
+                // mostrato dopo un minimize con sessione attiva, ignorando hideChatButton().
+                // Soluzione: CSS !important (vedi <style>) + override diretto nel timeout.
                 setTimeout(() => {
-                    embeddedservice_bootstrap.utilAPI.hideChatButton();
-                }, 600);
+                    console.log(">>> EVENTO: Window Minimized - Hiding Chat Button");
+                    document.getElementById('customChatLauncher').style.display = 'flex';
+                    forzaNascondiBottoneSF();
+                }, 100);
             });
 
             window.addEventListener("onEmbeddedMessagingWindowClosed", () => {
-                console.log(">>> EVENTO: Window Closed - Hiding Chat Button");
                 document.getElementById('customChatLauncher').style.display = 'flex';
-                
-                // 1. Nascondiamo subito per evitare flickering
-                embeddedservice_bootstrap.utilAPI.hideChatButton();
-                
-                // 2. Colpo finale a 600ms per superare l'animazione di SF
-                setTimeout(() => {
-                    embeddedservice_bootstrap.utilAPI.hideChatButton();
-                }, 600);
+                forzaNascondiBottoneSF();
             });
 
-            // Inizializzazione Core (SOSTITUISCI QUESTI DATI)
+            // Inizializzazione Core
             embeddedservice_bootstrap.init(
                 '00DUA000003hFV7',
                 'GitZedv2Upload',
@@ -212,7 +224,6 @@
     function apriChatSalesforce() {
         if (typeof embeddedservice_bootstrap === 'undefined') return;
 
-        // Nascondiamo il nostro bottone custom mentre la chat è aperta
         document.getElementById('customChatLauncher').style.display = 'none';
 
         console.log('[CustomChat] Lancio della chat via API nativa');
@@ -220,7 +231,6 @@
     }
 
   </script>
-  
   <script type='text/javascript' src='https://chogangroup--devai2.sandbox.my.site.com/ESWGitZedv2Upload1775142397588/assets/js/bootstrap.min.js'></script>
 
 </body>
