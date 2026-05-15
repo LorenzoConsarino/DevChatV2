@@ -30,7 +30,7 @@
 
     .status { font-size: 13px; text-align: center; color: #0969da; margin-top: 15px; font-weight: 600; min-height: 20px;}
 
-    /* Launcher Custom */
+    /* Launcher Custom Definitivo */
     #customChatLauncher {
         position: fixed;
         bottom: 20px;
@@ -42,23 +42,24 @@
         border-radius: 50%;
         transition: transform 0.2s;
         display: none;
-        background-color: transparent; 
+        background-color: transparent;
         align-items: center;
         justify-content: center;
-        -webkit-tap-highlight-color: transparent; 
+        -webkit-tap-highlight-color: transparent;
     }
 
     #customChatLauncher:hover {
         transform: scale(1.05);
     }
 
-    /* TRUCCO CSS: Quando il body ha questa classe, Salesforce sparisce nel nulla */
-    body.sf-chat-hidden embeddedservice-messaging-bootstrap {
+    /* -- IL TRUCCO "GHOST" PER SALESFORCE -- */
+    /* Quando il body ha questa classe, tutti gli elementi nativi di Agentforce diventano trasparenti e intoccabili */
+    body.sf-chat-ghost embeddedservice-messaging-bootstrap,
+    body.sf-chat-ghost #embedded-messaging,
+    body.sf-chat-ghost iframe[id^="embeddedMessaging"] {
         opacity: 0 !important;
         pointer-events: none !important;
-        position: fixed !important;
-        bottom: -9999px !important;
-        visibility: hidden !important;
+        z-index: -9999 !important;
     }
   </style>
 </head>
@@ -107,23 +108,10 @@
   </div>
 
   <div id="customChatLauncher" onclick="apriChatSalesforce()">
-      <img src="ChoganIcon.jpg" 
-           alt="Chat" 
-           style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+      <img src="ChoganIcon.jpg" alt="Chat" style="width: 100%; height: 100%; object-fit: contain; border-radius: 50%; background-color: white; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
   </div>
 
   <script type='text/javascript'>
-
-    // Funzioni di supporto per scambiare i bottoni
-    function nascondiNativo() {
-        document.body.classList.add('sf-chat-hidden');
-        document.getElementById('customChatLauncher').style.display = 'flex';
-    }
-
-    function mostraNativo() {
-        document.body.classList.remove('sf-chat-hidden');
-        document.getElementById('customChatLauncher').style.display = 'none';
-    }
 
     function startChatSession() {
         const btn = document.getElementById('start-btn');
@@ -145,12 +133,9 @@
 
         try {
             embeddedservice_bootstrap.settings.language = langCode;
-            
-            // Diciamo a Salesforce di non mostrare il bottone al caricamento
-            embeddedservice_bootstrap.settings.hideChatButtonOnLoad = true;
 
             window.addEventListener("onEmbeddedMessagingReady", () => {
-                console.log(">>> EVENTO: Messaging Ready");
+                console.log(">>> EVENTO: Messaging Ready --> Invio parametri...");
                 try {
                     const hiddenFields = {
                         "fullname":    document.getElementById('input-fullname').value,
@@ -165,27 +150,33 @@
             });
 
             window.addEventListener("onEmbeddedMessagingButtonCreated", () => {
-                console.log(">>> EVENTO: Button Created --> Nascondo nativo e mostro custom");
+                console.log(">>> EVENTO: Button Created --> Chat pronta");
                 document.getElementById('status-msg').innerText = "Chat Pronta (" + langCode + ")";
                 document.getElementById('status-msg').style.color = "green";
                 document.getElementById('start-btn').style.display = 'none';
                 
-                // Attiviamo l'invisibilità per Salesforce e mostriamo il logo Chogan
-                nascondiNativo();
+                // 1. Applichiamo la modalità "Ghost" al body. Il bottone nativo diventa invisibile.
+                document.body.classList.add('sf-chat-ghost');
+                
+                // 2. Mostriamo il nostro launcher
+                document.getElementById('customChatLauncher').style.display = 'flex';
             });
 
             window.addEventListener("onEmbeddedMessagingWindowMinimized", () => {
                 console.log(">>> EVENTO: Window Minimized");
-                // Appena minimizzato, facciamo riapparire il nostro bottone e spariamo quello nativo
-                nascondiNativo();
+                // Quando l'utente minimizza, Salesforce riapre il suo bottone forzatamente, 
+                // ma noi rimettiamo il "mantello dell'invisibilità" (Ghost mode) e accendiamo il nostro
+                document.body.classList.add('sf-chat-ghost');
+                document.getElementById('customChatLauncher').style.display = 'flex';
             });
 
             window.addEventListener("onEmbeddedMessagingWindowClosed", () => {
                 console.log(">>> EVENTO: Window Closed");
-                nascondiNativo();
+                document.body.classList.add('sf-chat-ghost');
+                document.getElementById('customChatLauncher').style.display = 'flex';
             });
 
-            // --- INSERISCI QUI I TUOI DATI SALESFORCE ---
+            // Inizializzazione Core
             embeddedservice_bootstrap.init(
                 '00DUA000003hFV7',
                 'GitZedv2Upload',
@@ -204,8 +195,12 @@
     function apriChatSalesforce() {
         if (typeof embeddedservice_bootstrap === 'undefined') return;
 
-        // Togliamo il blocco CSS per far apparire la finestra della chat e nascondiamo il nostro launcher
-        mostraNativo();
+        // Nascondiamo il launcher custom
+        document.getElementById('customChatLauncher').style.display = 'none';
+
+        // Togliamo la modalità "Ghost" per permettere all'interfaccia 
+        // nativa della chat di tornare visibile e interagibile
+        document.body.classList.remove('sf-chat-ghost');
 
         console.log('[CustomChat] Lancio della chat via API nativa');
         embeddedservice_bootstrap.utilAPI.launchChat();
