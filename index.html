@@ -30,7 +30,7 @@
 
     .status { font-size: 13px; text-align: center; color: #0969da; margin-top: 15px; font-weight: 600; min-height: 20px;}
 
-    /* Launcher Custom Definitivo */
+    /* Launcher Custom */
     #customChatLauncher {
         position: fixed;
         bottom: 20px;
@@ -43,33 +43,15 @@
         border-radius: 50%;
         transition: transform 0.2s;
         display: none;
-        
-        /* IL TRUCCO CSS: L'immagine diventa la "pelle" del bottone */
-        background-color: white;
-        background-image: url('https://raw.githubusercontent.com/LorenzoConsarino/DevChatV2/refs/heads/main/ChoganIcon.jpg');
-        background-size: cover; 
-        background-position: center;
-        background-repeat: no-repeat;
+        background-color: transparent; /* Tolto ogni colore di fondo per evitare confusione */
+        align-items: center;
+        justify-content: center;
+        /* Rimuove lo sfarfallio al click */
+        -webkit-tap-highlight-color: transparent; 
     }
 
     #customChatLauncher:hover {
         transform: scale(1.05);
-    }
-
-    #customChatLauncher svg {
-        width: 32px;
-        height: 32px;
-        fill: white; 
-    }
-
-    /* -- IL TRUCCO "GHOST" PER SALESFORCE -- */
-    /* Quando il body ha questa classe, tutti gli elementi nativi di Agentforce diventano trasparenti e intoccabili */
-    body.sf-chat-ghost embeddedservice-messaging-bootstrap,
-    body.sf-chat-ghost #embedded-messaging,
-    body.sf-chat-ghost iframe[id^="embeddedMessaging"] {
-        opacity: 0 !important;
-        pointer-events: none !important;
-        z-index: -9999 !important;
     }
   </style>
 </head>
@@ -118,11 +100,36 @@
   </div>
 
   <div id="customChatLauncher" onclick="apriChatSalesforce()">
-      <div id="customChatLauncher" onclick="apriChatSalesforce()">
-  </div>
+      <img src="ChoganIcon.jpg" 
+           alt="Chat" 
+           style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%; box-shadow: 0 4px 8px rgba(0,0,0,0.2);"
+           onerror="this.onerror=null; this.src='https://upload.wikimedia.org/wikipedia/commons/8/89/Portrait_Placeholder.png'; this.style.border='3px solid red';">
   </div>
 
   <script type='text/javascript'>
+
+    // --- Iniezione Chirurgica contro il widget di Salesforce ---
+    function cloakSalesforceWidget() {
+        const sfWidget = document.querySelector('embeddedservice-messaging-bootstrap');
+        if (sfWidget) {
+            sfWidget.style.setProperty('opacity', '0', 'important');
+            sfWidget.style.setProperty('pointer-events', 'none', 'important');
+            sfWidget.style.setProperty('position', 'fixed', 'important');
+            sfWidget.style.setProperty('bottom', '-9999px', 'important');
+            sfWidget.style.setProperty('z-index', '-9999', 'important');
+        }
+    }
+
+    function uncloakSalesforceWidget() {
+        const sfWidget = document.querySelector('embeddedservice-messaging-bootstrap');
+        if (sfWidget) {
+            sfWidget.style.removeProperty('opacity');
+            sfWidget.style.removeProperty('pointer-events');
+            sfWidget.style.removeProperty('position');
+            sfWidget.style.removeProperty('bottom');
+            sfWidget.style.removeProperty('z-index');
+        }
+    }
 
     function startChatSession() {
         const btn = document.getElementById('start-btn');
@@ -146,7 +153,7 @@
             embeddedservice_bootstrap.settings.language = langCode;
 
             window.addEventListener("onEmbeddedMessagingReady", () => {
-                console.log(">>> EVENTO: Messaging Ready --> Invio parametri...");
+                console.log(">>> EVENTO: Messaging Ready");
                 try {
                     const hiddenFields = {
                         "fullname":    document.getElementById('input-fullname').value,
@@ -161,33 +168,32 @@
             });
 
             window.addEventListener("onEmbeddedMessagingButtonCreated", () => {
-                console.log(">>> EVENTO: Button Created --> Chat pronta");
+                console.log(">>> EVENTO: Button Created --> Oscuro nativo e mostro custom");
                 document.getElementById('status-msg').innerText = "Chat Pronta (" + langCode + ")";
                 document.getElementById('status-msg').style.color = "green";
                 document.getElementById('start-btn').style.display = 'none';
                 
-                // 1. Applichiamo la modalità "Ghost" al body. Il bottone nativo diventa invisibile.
-                document.body.classList.add('sf-chat-ghost');
-                
-                // 2. Mostriamo il nostro launcher
+                cloakSalesforceWidget();
                 document.getElementById('customChatLauncher').style.display = 'flex';
             });
 
             window.addEventListener("onEmbeddedMessagingWindowMinimized", () => {
                 console.log(">>> EVENTO: Window Minimized");
-                // Quando l'utente minimizza, Salesforce riapre il suo bottone forzatamente, 
-                // ma noi rimettiamo il "mantello dell'invisibilità" (Ghost mode) e accendiamo il nostro
-                document.body.classList.add('sf-chat-ghost');
-                document.getElementById('customChatLauncher').style.display = 'flex';
+                setTimeout(() => {
+                    cloakSalesforceWidget();
+                    document.getElementById('customChatLauncher').style.display = 'flex';
+                }, 400);
             });
 
             window.addEventListener("onEmbeddedMessagingWindowClosed", () => {
                 console.log(">>> EVENTO: Window Closed");
-                document.body.classList.add('sf-chat-ghost');
-                document.getElementById('customChatLauncher').style.display = 'flex';
+                setTimeout(() => {
+                    cloakSalesforceWidget();
+                    document.getElementById('customChatLauncher').style.display = 'flex';
+                }, 400);
             });
 
-            // Inizializzazione Core
+            // --- INSERISCI QUI I TUOI DATI SALESFORCE ---
             embeddedservice_bootstrap.init(
                 '00DUA000003hFV7',
                 'GitZedv2Upload',
@@ -206,12 +212,8 @@
     function apriChatSalesforce() {
         if (typeof embeddedservice_bootstrap === 'undefined') return;
 
-        // Nascondiamo il launcher custom
         document.getElementById('customChatLauncher').style.display = 'none';
-
-        // Togliamo la modalità "Ghost" per permettere all'interfaccia 
-        // nativa della chat di tornare visibile e interagibile
-        document.body.classList.remove('sf-chat-ghost');
+        uncloakSalesforceWidget();
 
         console.log('[CustomChat] Lancio della chat via API nativa');
         embeddedservice_bootstrap.utilAPI.launchChat();
