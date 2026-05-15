@@ -1,1 +1,216 @@
- 
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title> ZED IN GIT DEV2 </title>
+  <style>
+    body { font-family: 'Segoe UI', Arial, sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #f4f6f9; margin: 0; }
+    .box { background: #fff; padding: 30px; border: 1px solid #e0e0e0; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.08); text-align: left; width: 380px; }
+    h1 { margin: 0 0 25px; font-size: 26px; text-align: center; color: #1a1a1a; }
+    
+    .form-row { margin-bottom: 15px; }
+    .form-row label { display: block; font-size: 14px; font-weight: 600; color: #333; margin-bottom: 5px; }
+    
+    select, input[type="text"] { 
+        width: 100%; 
+        padding: 8px 10px; 
+        border-radius: 4px; 
+        border: 1px solid #ccc; 
+        font-size: 14px; 
+        box-sizing: border-box; 
+        background-color: #fff;
+    }
+    
+    input[type="text"]:focus, select:focus { border-color: #0070d2; outline: none; box-shadow: 0 0 3px rgba(0,112,210, 0.3); }
+
+    .btn-start { display: block; width: 100%; padding: 12px; background-color: #0070d2; color: white; border: none; border-radius: 6px; font-size: 16px; cursor: pointer; margin-top: 25px; transition: background 0.3s; }
+    .btn-start:hover { background-color: #005fb2; }
+    .btn-start:disabled { background-color: #ccc; cursor: not-allowed; }
+
+    .status { font-size: 13px; text-align: center; color: #0969da; margin-top: 15px; font-weight: 600; min-height: 20px;}
+
+    /* Custom Launcher */
+    #customChatLauncher {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        width: 65px; 
+        height: 65px;
+        cursor: pointer;
+        z-index: 9999;
+        box-shadow: 0 6px 16px rgba(0,0,0,0.3);
+        border-radius: 50%;
+        transition: transform 0.2s, background-color 0.2s;
+        display: none; /* Nascosto finché la chat non è pronta */
+        background-color: #0070d2;
+        align-items: center;
+        justify-content: center;
+    }
+
+    #customChatLauncher:hover {
+        transform: scale(1.1);
+        background-color: #005fb2;
+    }
+
+    #customChatLauncher svg {
+        width: 32px;
+        height: 32px;
+        fill: white; 
+    }
+  </style>
+</head>
+<body>
+
+  <div class="box">
+    <h1>Zed ORG Dev 2.</h1>
+    
+    <div class="form-row" style="background-color: #fafffa; border: 1px solid #cce5cc; padding: 10px; border-radius: 6px;">
+        <label for="language-picker">Lingua Chat</label>
+        <select id="language-picker">
+            <option value="it">Italia (IT)</option>
+            <option value="en_US">English (US)</option>
+            <option value="fr">Francese 2 (fr)</option>
+            <option value="en_GB">English (GB)</option>
+        </select>
+    </div>
+
+    <div class="form-row">
+        <label for="input-fullname">Nome Completo (fullname)</label>
+        <input type="text" id="input-fullname" value="Mario Bianchi" placeholder="Es. Mario Rossi">
+    </div>
+
+    <div class="form-row">
+        <label for="input-type">Tipo Utente (userType)</label>
+        <input type="text" id="input-type" value="consultant" placeholder="Es. consultant">
+    </div>
+
+    <div class="form-row">
+        <label for="input-id">ID Utente (userId)</label>
+        <input type="text" id="input-id" value="2424051" placeholder="Es. 12345">
+    </div>
+
+    <div class="form-row">
+        <label for="input-nationality">Nazionalità (nationality)</label>
+        <input type="text" id="input-nationality" value="IT" placeholder="Es. IT, FR, ES">
+    </div>
+    
+    <button id="start-btn" class="btn-start" onclick="startChatSession()">Inizializza Chat</button>
+
+    <div id="status-msg" class="status">Configura i dati e clicca Inizializza</div>
+
+    <p style="text-align:center; color:#999; font-size:11px; margin-top:25px;">
+        Chogan Demo Environment chat hide 5 agentforce
+    </p>
+  </div>
+
+  <!-- BOTTONE CUSTOM -->
+  <div id="customChatLauncher" onclick="apriChatSalesforce()">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+          <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H5.2L4 17.2V4h16v12z"/>
+          <path d="M7 9h10v2H7zm0-3h10v2H7z"/>
+      </svg>
+  </div>
+
+  <script type='text/javascript'>
+
+    function startChatSession() {
+        const btn = document.getElementById('start-btn');
+        btn.disabled = true;
+        btn.innerText = "Caricamento...";
+        
+        document.getElementById('language-picker').disabled = true;
+        document.getElementById('input-fullname').disabled = true;
+        document.getElementById('input-type').disabled = true;
+        document.getElementById('input-id').disabled = true;
+        document.getElementById('input-nationality').disabled = true;
+
+        const selectedLang = document.getElementById('language-picker').value;
+        initEmbeddedMessaging(selectedLang);
+    }
+
+    function initEmbeddedMessaging(langCode) {
+        console.log("--> INIT SALESFORCE START <--");
+
+        try {
+            embeddedservice_bootstrap.settings.language = langCode;
+            
+            // 1. Diciamo a Salesforce di non caricare il proprio bottone all'avvio
+            embeddedservice_bootstrap.settings.hideChatButtonOnLoad = true;
+
+            window.addEventListener("onEmbeddedMessagingReady", () => {
+                console.log(">>> EVENTO: Messaging Ready --> Invio parametri...");
+                try {
+                    const hiddenFields = {
+                        "fullname":    document.getElementById('input-fullname').value,
+                        "userType":    document.getElementById('input-type').value,
+                        "nationality": document.getElementById('input-nationality').value,
+                        "userId":      document.getElementById('input-id').value,
+                    };
+                    embeddedservice_bootstrap.prechatAPI.setHiddenPrechatFields(hiddenFields);
+                } catch (e) {
+                    console.error("Errore hidden fields:", e);
+                    document.getElementById('status-msg').innerText = "Errore Parametri";
+                    document.getElementById('status-msg').style.color = "red";
+                }
+            });
+
+            window.addEventListener("onEmbeddedMessagingButtonCreated", () => {
+                console.log(">>> EVENTO: Button Created --> Chat pronta all'uso");
+                document.getElementById('status-msg').innerText = "Chat Pronta (" + langCode + ")";
+                document.getElementById('status-msg').style.color = "green";
+                document.getElementById('start-btn').style.display = 'none';
+                
+                // 2. Mostriamo il nostro bottone Custom
+                document.getElementById('customChatLauncher').style.display = 'flex';
+                
+                // Per ulteriore sicurezza, richiamiamo l'API nativa per nascondere il bottone SF
+                embeddedservice_bootstrap.utilAPI.hideChatButton();
+            });
+            window.addEventListener("onEmbeddedMessagingWindowMinimized", () => {
+                setTimeout(() => {
+                    console.log(">>> EVENTO: Window Minimized - Hiding Chat Button");
+                    document.getElementById('customChatLauncher').style.display = 'flex';
+                    embeddedservice_bootstrap.utilAPI.hideChatButton();
+                }, 100);
+            });
+
+
+            window.addEventListener("onEmbeddedMessagingWindowClosed", () => {
+                // 4. Stessa cosa quando viene chiusa
+                document.getElementById('customChatLauncher').style.display = 'flex';
+                embeddedservice_bootstrap.utilAPI.hideChatButton();
+            });
+
+            // Inizializzazione Core
+            embeddedservice_bootstrap.init(
+                '00DUA000003hFV7',
+                'GitZedv2Upload',
+                'https://chogangroup--devai2.sandbox.my.site.com/ESWGitZedv2Upload1775142397588',
+                {
+                    scrt2URL: 'https://chogangroup--devai2.sandbox.my.salesforce-scrt.com'
+                }
+            );
+
+        } catch (err) {
+            console.error('Errore critico durante Init:', err);
+            document.getElementById('status-msg').innerText = "Errore Init";
+        }
+    }
+
+    function apriChatSalesforce() {
+        if (typeof embeddedservice_bootstrap === 'undefined') return;
+
+        // Nascondiamo il nostro bottone custom mentre la chat è aperta
+        document.getElementById('customChatLauncher').style.display = 'none';
+
+        // 5. Usa l'API NATIVA per lanciare la finestra al posto di simulare il .click()
+        console.log('[CustomChat] Lancio della chat via API nativa');
+        embeddedservice_bootstrap.utilAPI.launchChat();
+    }
+
+  </script>
+  <script type='text/javascript' src='https://chogangroup--devai2.sandbox.my.site.com/ESWGitZedv2Upload1775142397588/assets/js/bootstrap.min.js'></script>
+
+</body>
+</html> 
