@@ -42,7 +42,7 @@
         box-shadow: 0 6px 16px rgba(0,0,0,0.3);
         border-radius: 50%;
         transition: transform 0.2s, background-color 0.2s;
-        display: none; /* Nascosto finché la chat non è pronta */
+        display: none;
         background-color: #0070d2;
         align-items: center;
         justify-content: center;
@@ -57,6 +57,16 @@
         width: 32px;
         height: 32px;
         fill: white; 
+    }
+
+    /* -- IL TRUCCO "GHOST" PER SALESFORCE -- */
+    /* Quando il body ha questa classe, tutti gli elementi nativi di Agentforce diventano trasparenti e intoccabili */
+    body.sf-chat-ghost embeddedservice-messaging-bootstrap,
+    body.sf-chat-ghost #embedded-messaging,
+    body.sf-chat-ghost iframe[id^="embeddedMessaging"] {
+        opacity: 0 !important;
+        pointer-events: none !important;
+        z-index: -9999 !important;
     }
   </style>
 </head>
@@ -133,13 +143,6 @@
 
         try {
             embeddedservice_bootstrap.settings.language = langCode;
-            
-            // Impostazione per nascondere il bottone nativo al caricamento
-            embeddedservice_bootstrap.settings.hideChatButtonOnLoad = true;
-
-            // SOLUZIONE DEFINITIVA: Spostiamo il bottone nativo fuori dalla visuale.
-            // Quando Salesforce ne forza la ricreazione, apparirà a -9999px.
-            embeddedservice_bootstrap.settings.chatButtonPosition = "-9999px, -9999px";
 
             window.addEventListener("onEmbeddedMessagingReady", () => {
                 console.log(">>> EVENTO: Messaging Ready --> Invio parametri...");
@@ -153,8 +156,6 @@
                     embeddedservice_bootstrap.prechatAPI.setHiddenPrechatFields(hiddenFields);
                 } catch (e) {
                     console.error("Errore hidden fields:", e);
-                    document.getElementById('status-msg').innerText = "Errore Parametri";
-                    document.getElementById('status-msg').style.color = "red";
                 }
             });
 
@@ -164,18 +165,24 @@
                 document.getElementById('status-msg').style.color = "green";
                 document.getElementById('start-btn').style.display = 'none';
                 
-                // Mostriamo il launcher custom
+                // 1. Applichiamo la modalità "Ghost" al body. Il bottone nativo diventa invisibile.
+                document.body.classList.add('sf-chat-ghost');
+                
+                // 2. Mostriamo il nostro launcher
                 document.getElementById('customChatLauncher').style.display = 'flex';
             });
 
             window.addEventListener("onEmbeddedMessagingWindowMinimized", () => {
                 console.log(">>> EVENTO: Window Minimized");
-                // Riattiviamo il nostro launcher. Il nativo apparirà fuori schermo.
+                // Quando l'utente minimizza, Salesforce riapre il suo bottone forzatamente, 
+                // ma noi rimettiamo il "mantello dell'invisibilità" (Ghost mode) e accendiamo il nostro
+                document.body.classList.add('sf-chat-ghost');
                 document.getElementById('customChatLauncher').style.display = 'flex';
             });
 
             window.addEventListener("onEmbeddedMessagingWindowClosed", () => {
                 console.log(">>> EVENTO: Window Closed");
+                document.body.classList.add('sf-chat-ghost');
                 document.getElementById('customChatLauncher').style.display = 'flex';
             });
 
@@ -198,8 +205,12 @@
     function apriChatSalesforce() {
         if (typeof embeddedservice_bootstrap === 'undefined') return;
 
-        // Nascondiamo il launcher custom mentre la chat è attiva
+        // Nascondiamo il launcher custom
         document.getElementById('customChatLauncher').style.display = 'none';
+
+        // Togliamo la modalità "Ghost" per permettere all'interfaccia 
+        // nativa della chat di tornare visibile e interagibile
+        document.body.classList.remove('sf-chat-ghost');
 
         console.log('[CustomChat] Lancio della chat via API nativa');
         embeddedservice_bootstrap.utilAPI.launchChat();
