@@ -39,19 +39,26 @@
         height: 65px;
         cursor: pointer;
         z-index: 99999;
-        box-shadow: 0 6px 16px rgba(0,0,0,0.3);
         border-radius: 50%;
         transition: transform 0.2s;
         display: none;
-        background-color: transparent; /* Tolto ogni colore di fondo per evitare confusione */
+        background-color: transparent; 
         align-items: center;
         justify-content: center;
-        /* Rimuove lo sfarfallio al click */
         -webkit-tap-highlight-color: transparent; 
     }
 
     #customChatLauncher:hover {
         transform: scale(1.05);
+    }
+
+    /* TRUCCO CSS: Quando il body ha questa classe, Salesforce sparisce nel nulla */
+    body.sf-chat-hidden embeddedservice-messaging-bootstrap {
+        opacity: 0 !important;
+        pointer-events: none !important;
+        position: fixed !important;
+        bottom: -9999px !important;
+        visibility: hidden !important;
     }
   </style>
 </head>
@@ -102,33 +109,20 @@
   <div id="customChatLauncher" onclick="apriChatSalesforce()">
       <img src="ChoganIcon.jpg" 
            alt="Chat" 
-           style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%; box-shadow: 0 4px 8px rgba(0,0,0,0.2);"
-           onerror="this.onerror=null; this.src='https://upload.wikimedia.org/wikipedia/commons/8/89/Portrait_Placeholder.png'; this.style.border='3px solid red';">
+           style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
   </div>
 
   <script type='text/javascript'>
 
-    // --- Iniezione Chirurgica contro il widget di Salesforce ---
-    function cloakSalesforceWidget() {
-        const sfWidget = document.querySelector('embeddedservice-messaging-bootstrap');
-        if (sfWidget) {
-            sfWidget.style.setProperty('opacity', '0', 'important');
-            sfWidget.style.setProperty('pointer-events', 'none', 'important');
-            sfWidget.style.setProperty('position', 'fixed', 'important');
-            sfWidget.style.setProperty('bottom', '-9999px', 'important');
-            sfWidget.style.setProperty('z-index', '-9999', 'important');
-        }
+    // Funzioni di supporto per scambiare i bottoni
+    function nascondiNativo() {
+        document.body.classList.add('sf-chat-hidden');
+        document.getElementById('customChatLauncher').style.display = 'flex';
     }
 
-    function uncloakSalesforceWidget() {
-        const sfWidget = document.querySelector('embeddedservice-messaging-bootstrap');
-        if (sfWidget) {
-            sfWidget.style.removeProperty('opacity');
-            sfWidget.style.removeProperty('pointer-events');
-            sfWidget.style.removeProperty('position');
-            sfWidget.style.removeProperty('bottom');
-            sfWidget.style.removeProperty('z-index');
-        }
+    function mostraNativo() {
+        document.body.classList.remove('sf-chat-hidden');
+        document.getElementById('customChatLauncher').style.display = 'none';
     }
 
     function startChatSession() {
@@ -151,6 +145,9 @@
 
         try {
             embeddedservice_bootstrap.settings.language = langCode;
+            
+            // Diciamo a Salesforce di non mostrare il bottone al caricamento
+            embeddedservice_bootstrap.settings.hideChatButtonOnLoad = true;
 
             window.addEventListener("onEmbeddedMessagingReady", () => {
                 console.log(">>> EVENTO: Messaging Ready");
@@ -168,29 +165,24 @@
             });
 
             window.addEventListener("onEmbeddedMessagingButtonCreated", () => {
-                console.log(">>> EVENTO: Button Created --> Oscuro nativo e mostro custom");
+                console.log(">>> EVENTO: Button Created --> Nascondo nativo e mostro custom");
                 document.getElementById('status-msg').innerText = "Chat Pronta (" + langCode + ")";
                 document.getElementById('status-msg').style.color = "green";
                 document.getElementById('start-btn').style.display = 'none';
                 
-                cloakSalesforceWidget();
-                document.getElementById('customChatLauncher').style.display = 'flex';
+                // Attiviamo l'invisibilità per Salesforce e mostriamo il logo Chogan
+                nascondiNativo();
             });
 
             window.addEventListener("onEmbeddedMessagingWindowMinimized", () => {
                 console.log(">>> EVENTO: Window Minimized");
-                setTimeout(() => {
-                    cloakSalesforceWidget();
-                    document.getElementById('customChatLauncher').style.display = 'flex';
-                }, 400);
+                // Appena minimizzato, facciamo riapparire il nostro bottone e spariamo quello nativo
+                nascondiNativo();
             });
 
             window.addEventListener("onEmbeddedMessagingWindowClosed", () => {
                 console.log(">>> EVENTO: Window Closed");
-                setTimeout(() => {
-                    cloakSalesforceWidget();
-                    document.getElementById('customChatLauncher').style.display = 'flex';
-                }, 400);
+                nascondiNativo();
             });
 
             // --- INSERISCI QUI I TUOI DATI SALESFORCE ---
@@ -212,8 +204,8 @@
     function apriChatSalesforce() {
         if (typeof embeddedservice_bootstrap === 'undefined') return;
 
-        document.getElementById('customChatLauncher').style.display = 'none';
-        uncloakSalesforceWidget();
+        // Togliamo il blocco CSS per far apparire la finestra della chat e nascondiamo il nostro launcher
+        mostraNativo();
 
         console.log('[CustomChat] Lancio della chat via API nativa');
         embeddedservice_bootstrap.utilAPI.launchChat();
