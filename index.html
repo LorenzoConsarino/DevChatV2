@@ -128,9 +128,6 @@
 
             window.addEventListener("onEmbeddedMessagingButtonCreated", () => {
                 console.log(">>> EVENTO: Button Created --> Chat pronta");
-                document.getElementById('status-msg').innerText = "Chat Pronta (" + langCode + ")";
-                document.getElementById('status-msg').style.color = "green";
-                document.getElementById('start-btn').style.display = 'none';
                 
                 // 1. Applichiamo la modalità "Ghost" al body. Il bottone nativo diventa invisibile.
                 document.body.classList.add('sf-chat-ghost');
